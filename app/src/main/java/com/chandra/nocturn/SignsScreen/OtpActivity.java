@@ -1,9 +1,10 @@
 package com.chandra.nocturn.SignsScreen;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,24 +15,30 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.chandra.nocturn.MainActivity;
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+import com.chandra.nocturn.ProfileCreation.ProfilecreationActivity;
 import com.chandra.nocturn.R;
-import com.chandra.nocturn.modals.DataModalForAuth;
-import com.chandra.nocturn.modals.DataModalForVerifyOtp;
-import com.chandra.nocturn.retrofitApi.RetrofitApi;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class OtpActivity extends AppCompatActivity {
 
     TextView otpInput;
     Button verifyOtp;
+    SharedPreferences sharedPreferences;
+    String url = "http://192.168.0.105:8000/api/v1/auth/verify-otp";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,16 +56,9 @@ public class OtpActivity extends AppCompatActivity {
         otpInput = findViewById(R.id.otpInput);
         verifyOtp = findViewById(R.id.verifyOtpButton);
 
-        // Retrieve Bundle
-        Bundle bundle = getIntent().getExtras();
-        if (bundle == null || !bundle.containsKey("phoneNumber")) {
-            Toast.makeText(this, "Phone number not provided", Toast.LENGTH_SHORT).show();
-            Log.e("OtpActivity", "No phone number found in the intent bundle");
-            finish(); // Exit the activity as no phone number was provided
-            return;
-        }
 
-        String phoneNumber = bundle.getString("phoneNumber");
+        Intent intent = getIntent();
+        String phoneNumber = intent.getStringExtra("phoneNumber");
 
         verifyOtp.setOnClickListener(view -> {
             String otp = otpInput.getText().toString();
@@ -67,44 +67,54 @@ public class OtpActivity extends AppCompatActivity {
                 return;
             }
 
-            verifyOtp(otp, phoneNumber);
+            verifyOTPandJWT(getApplicationContext(),otp,phoneNumber);
         });
     }
 
-
-    private void verifyOtp(String otp,String phoneNumber){
-        Gson gson = new GsonBuilder()
-                .setLenient()
-                .create();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.0.105:8000/api/v1/auth/")
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build();
-
-        RetrofitApi retrofitApi = retrofit.create(RetrofitApi.class);
-        DataModalForVerifyOtp dataModalForVerifyOtp = new DataModalForVerifyOtp(otp,phoneNumber);
-        Call<DataModalForVerifyOtp> call = retrofitApi.verifyUserOtp(dataModalForVerifyOtp);
-        call.enqueue(new Callback<DataModalForVerifyOtp>() {
+    private void verifyOTPandJWT(Context context,String otp,String phoneNumber){
+        RequestQueue requestQueue =  Volley.newRequestQueue(this);
+        JsonObjectRequest otpVerificationRequest = new JsonObjectRequest(Request.Method.POST, url, null, new Response.Listener<JSONObject>() {
             @Override
-            public void onResponse(Call<DataModalForVerifyOtp> call, Response<DataModalForVerifyOtp> response) {
-                if(response.isSuccessful()){
-                    Toast.makeText(OtpActivity.this, "OTP VERIFIED SUCCESSFULLY", Toast.LENGTH_SHORT).show();
-                    DataModalForVerifyOtp responseFromAPI = response.body();
-                    if(responseFromAPI != null){
-                        Toast.makeText(OtpActivity.this, responseFromAPI.toString(), Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(OtpActivity.this, MainActivity.class));
-                        finish();
-                    }
-
+            public void onResponse(JSONObject response) {
+                try {
+                    String jwtToken = response.getString("accessToken");
+                    sharedPreferences = getSharedPreferences("NocturnSharedPref",MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("jwtAuth",jwtToken);
+                    editor.commit();
+                    Toast.makeText(context, "Create your profile", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(OtpActivity.this, ProfilecreationActivity.class));
+                    finish();
+                }catch (JSONException e){
+                    Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
-
+        }, new Response.ErrorListener() {
             @Override
-            public void onFailure(Call<DataModalForVerifyOtp> call, Throwable throwable) {
-                Toast.makeText(OtpActivity.this, throwable.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e("error", throwable.getMessage());
+            public void onErrorResponse(VolleyError error) {
+                try {
+                    Toast.makeText(context, error.getMessage(), Toast.LENGTH_SHORT).show();
+                }catch (Exception e){
+                    Toast.makeText(context, "Error occured", Toast.LENGTH_SHORT).show();
+                }
             }
-        });
+        }){
+            @Override
+            public byte[] getBody() {
+                try {
+                    JSONObject otpVerificationBody = new JSONObject();
+                    otpVerificationBody.put("otp",otp);
+                    otpVerificationBody.put("phoneNumber",phoneNumber);
+                    return otpVerificationBody.toString().getBytes(StandardCharsets.UTF_8);
+                }catch (Exception e){
+                    Toast.makeText(OtpActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    return null;
+                }
+            }
+        };
+        requestQueue.add(otpVerificationRequest);
     }
+
+
+
 }

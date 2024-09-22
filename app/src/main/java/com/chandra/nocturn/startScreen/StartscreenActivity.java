@@ -1,6 +1,8 @@
 package com.chandra.nocturn.startScreen;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,6 +13,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.chandra.nocturn.MainActivity;
+import com.chandra.nocturn.ProfileCreation.ProfilecreationActivity;
 import com.chandra.nocturn.R;
 import com.chandra.nocturn.SignsScreen.OtpActivity;
 import com.chandra.nocturn.SignsScreen.SignscreenActivity;
@@ -18,7 +22,7 @@ import com.chandra.nocturn.SignsScreen.SignscreenActivity;
 public class StartscreenActivity extends AppCompatActivity {
 
     Button loginButton,signUpButton;
-
+    SharedPreferences awt ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +39,18 @@ public class StartscreenActivity extends AppCompatActivity {
 
         loginButton = findViewById(R.id.loginButton);
         signUpButton = findViewById(R.id.signupButton);
+        awt = getSharedPreferences("NocturnSharedPref", Context.MODE_PRIVATE);
+        String token = awt.getString("jwtAuth", "");
+        String email = awt.getString("email","");
+
+
+        if(!token.isEmpty() && !email.isEmpty()){
+            startActivity(new Intent(StartscreenActivity.this, MainActivity.class));
+            finish();
+        }else{
+            startActivity(new Intent(StartscreenActivity.this, ProfilecreationActivity.class));
+            finish();
+        }
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override

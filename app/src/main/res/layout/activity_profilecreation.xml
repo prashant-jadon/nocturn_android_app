@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".SignsScreen.ProfilecreationActivity"
     android:background="@android:color/white"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:context=".ProfileCreation.ProfilecreationActivity">
+
+
+
 
         <!-- Profile Image -->
         <ImageView
@@ -49,6 +54,7 @@
             android:layout_height="wrap_content">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/username"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Username"
@@ -62,6 +68,7 @@
             android:layout_marginTop="8dp">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Email"
@@ -75,6 +82,7 @@
             android:layout_marginTop="8dp">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/fullName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Full Name"
@@ -83,12 +91,11 @@
 
         <!-- Create Profile Button -->
         <Button
+            android:id="@+id/createAccount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Create my profile"
             android:textColor="@android:color/black"
             android:backgroundTint="@color/GreyLight"
             android:layout_marginTop="16dp"/>
-</LinearLayout>
-
-
+    </LinearLayout>
